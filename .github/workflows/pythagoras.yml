@@ -1,0 +1,26 @@
+name: Pythagoras Proposal
+on:
+    workflow_dispatch:
+        inputs:
+            prompt:
+                description: "Prompt for Pythagoras"
+                required: true
+            model:
+                description: "Optional model override"
+                required: false
+jobs:
+    propose:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+            issues: read
+            models: read
+        steps:
+            - uses: actions/checkout@v4
+            - name: Run Pythagoras Action
+              uses: ./.
+              with:
+                  prompt: ${{ inputs.prompt }}
+                  model: ${{ inputs.model }}
+                  dry_run: "false"
