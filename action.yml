@@ -5,40 +5,23 @@ runs:
   using: "node20"
   main: "dist/index.js"
 inputs:
-  prompt:
-    description: "High-level request or issue description for AI to act on."
-    required: true
+  working_directory:
+    description: "Root directory for context discovery (defaults to repository root)."
+    required: false
+    default: "."
   model:
-    description: "GitHub Model ID override (default: gpt-4.1-mini)."
+    description: "GitHub Model ID (default: gpt-4.1-mini)."
     required: false
     default: "gpt-4.1-mini"
-  max_patch_files:
-    description: "Safety limit: maximum files AI may change in one PR."
-    required: false
-    default: "25"
-  dry_run:
-    description: "If true, only produce PR proposal without executing post-merge actions."
-    required: false
-    default: "false"
   issue_number:
-    description: "Optional issue number to pull extra context from."
+    description: "Issue number for context & memory (optional)."
     required: false
-  mcp_config_path:
-    description: "Path to MCP server configuration directory."
+  pr_number:
+    description: "Existing PR number to update instead of creating a new one (optional)."
     required: false
-    default: "config/mcp"
-  knowledge_base_path:
-    description: "Path to knowledge base directory."
+  user_prompt_path:
+    description: "Path to file containing user prompt if not using issue (optional)."
     required: false
-    default: "knowledge_base"
-  models_endpoint:
-    description: "Override GitHub Models API endpoint (optional)."
-    required: false
-    default: ""
-  max_memory_comments:
-    description: "Maximum number of recent issue/PR comments to include in memory context."
-    required: false
-    default: "20"
 outputs:
   pr_number:
     description: "Created PR number if a proposal was made."

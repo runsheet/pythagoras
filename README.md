@@ -6,27 +6,23 @@ Pythagoras is a human-in-the-loop AI automation action. It reads a prompt (and o
 - Uses GitHub Models (default: `gpt-4.1-mini`) with optional override input.
 - Knowledge base ingestion from `knowledge_base/` plain text/markdown files.
 - MCP server configuration ingestion from `config/mcp/*.yml`.
-- Safety guard: limit number of changed files (`max_patch_files`).
-- Dry-run mode produces a PR without any apply phase.
-- Designed for a two-phase flow: Proposal (PR) -> Application (post-merge workflow).
+- Safety guards: limit number of changed files (hard limit 25) and per-file size (50KB).
+- Human-in-the-loop: always proposes via PR; a separate workflow can perform apply phase.
+- Convention over configuration: minimal action inputs, relies on repo structure.
+- Extensible architecture (SOLID services: config, memory, model, git, render).
 
-## Inputs
+## Inputs (Current Minimal Set)
 | Name | Description | Default |
 |------|-------------|---------|
-| `prompt` | High-level request or issue description for AI. | (required) |
+| `working_directory` | Root path for conventions (KB, MCP, system prompt). | `.` |
 | `model` | GitHub Model ID to use. | `gpt-4.1-mini` |
-| `max_patch_files` | Maximum files allowed per proposal. | `25` |
-| `dry_run` | If `true`, only create PR, don't apply. | `false` |
-| `issue_number` | Repo issue number for extra context. | (optional) |
-| `mcp_config_path` | Path to MCP config directory. | `config/mcp` |
-| `knowledge_base_path` | Path to knowledge base. | `knowledge_base` |
-| `models_endpoint` | Optional override of GitHub Models API endpoint. | (blank) |
+| `issue_number` | Issue number to seed memory context (title/body/comments). | (optional) |
+| `user_prompt_path` | File path containing a user prompt (fallback if no issue). | (optional) |
 
 ## Outputs
 | Name | Description |
 |------|-------------|
-| `pr_number` | The created PR number (if any). |
-| `applied` | `true` if apply phase executed (proposal workflow sets `false`). |
+| `pr_number` | The created (or updated) proposal PR number. |
 
 ## Example Workflow (Proposal Phase)
 ```yaml
@@ -56,14 +52,15 @@ jobs:
         if: github.event_name == 'issues'
         uses: ./. # local action
         with:
-          prompt: ${{ github.event.issue.title }}
+          working_directory: .
           issue_number: ${{ github.event.issue.number }}
-      - name: Run Pythagoras (manual prompt)
+      - name: Run Pythagoras (manual prompt file)
         if: github.event_name == 'workflow_dispatch'
         uses: ./. # local action
         with:
-          prompt: ${{ inputs.prompt }}
+          working_directory: .
           model: ${{ inputs.model }}
+          user_prompt_path: prompts/request.md
 ```
 
 ## Example Workflow (Apply Phase After Merge)
@@ -114,37 +111,44 @@ commands:
 4. Reviewer approves & merges.
 5. Apply workflow runs: executes `scripts/cleanup.sh`, potentially extended to SSH into agent (future enhancement: add secrets & remote execution logic).
 
-## Model Call Implementation
-The action now performs a real HTTPS POST (Node `https` core module) to the GitHub Models API (default endpoint `https://api.githubcopilot.com/chat/completions`). It:
-1. Sends system + user messages.
-2. Instructs the model to return a fenced JSON block with keys `reasoning` and `patches`.
-3. Extracts and parses the JSON block.
-4. Uses `patches` to build a tree for the proposal PR.
+## Model Call Implementation & Endpoint/Token Resolution
+During `loadConfig()` the action resolves:
+- Bearer token from `GITHUB_TOKEN` env (required unless using dummy mode).
+- Model endpoint from `PYTHAGORAS_MODEL_ENDPOINT` (falls back to `https://models.github.ai/inference/chat/completions`).
 
-If your enterprise or preview setup uses a different endpoint, pass `models_endpoint` input.
+It then performs a real HTTPS POST (Node `https`) to the endpoint.
+
+Override example:
+
+```yaml
+env:
+  PYTHAGORAS_MODEL_ENDPOINT: https://my-proxy.internal/inference/chat/completions
+```
+
+The model is instructed to return a fenced JSON block with keys `reasoning` and `patches`; these patches become proposed file changes. In local development you can set `GITHUB_TOKEN=dummy` to exercise logic without remote calls.
 
 ## Safety & Limits
-- `max_patch_files` prevents runaway edits.
-- Future improvements: size diff limit, semantic approval labels, test run gating.
+- Hard cap: 25 files per proposal.
+- Per-file size limit: 50KB.
+- Future improvements: aggregate size diff limit, semantic approval labels, test run gating.
 
-## Dry Run
-Set `dry_run: true` to only create the proposal PR.
+## Dry Run (Deprecated)
+Earlier versions supported `dry_run`; current design always proposes. An apply phase is handled by a separate workflow after merge.
 
 ## Roadmap
-- Real model integration
-- Chunking & embedding for large KB
-- Tool execution orchestration (SSH, diagnostics) via MCP server adapters
-- Apply mode inside the same action (input: `mode=apply`)
-- Automated test harness & linter
- - Issue & PR comment memory (implemented for issue comments)
- - PR comment memory & state persistence
+- Embedding & chunking for large knowledge base docs.
+- MCP tool invocation simulation & structured tool results.
+- Apply workflow integration (automated execution frameworks).
+- PR comment memory & state persistence.
+- Risk scoring & automatic test gating.
+- Dependency injection improvements for easier testing.
 
 ## Production Build
-The action now bundles source with esbuild. Regenerate `dist/index.js` after changes:
+Bundled via Rollup + TypeScript. Rebuild after changes:
 ```bash
-npm run build
+npm run package
 ```
-Commit the updated `dist/index.js` so GitHub Actions runners can execute without installing dev dependencies.
+Commit the updated `dist/index.js` so runners execute without dev dependency installs.
 
 ## Release Process (Suggested)
 1. Update version in `package.json`.
