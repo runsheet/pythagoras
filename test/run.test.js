@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import core from '@actions/core';
-import { run } from '../src/index.js';
+import { run } from '../src/index.ts';
 
 // Mock @actions/core methods that interact with GitHub Actions runtime
 vi.mock('@actions/core', () => ({
