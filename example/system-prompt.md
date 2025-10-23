@@ -24,16 +24,16 @@ WORKFLOW MODES
 
 WHAT TO PRODUCE IN PROPOSE MODE
 Return a JSON fenced block with keys:
-{{
+{
 "reasoning": string, // Concise chain-of-thought style, redacting secrets. Explain diagnostic path.
 "patches": [ // Each patch describes a file change.
-{{
+{
 "file": string, // Relative path.
 "action": "create"|"update"|"delete",
 "content": string? // Required for create/update. Omit for delete.
-}}
+}
 ]
-}}
+}
 Constraints:
 
 - Max file count governed by input max_patch_files.
@@ -93,22 +93,22 @@ fi
 OUTPUT FORMAT (FINAL)
 
 ```json
-{{
+{
   "reasoning": "...",
   "patches": [
-    {{
+    {
       "file": "scripts/cleanup.sh",
       "action": "create",
       "content": "#!/bin/bash\nset -euo pipefail..."
-    }}
+    }
   ]
-}}
+}
 ```
 
 If no changes, return:
 
 ```json
-{{ "reasoning": "Need clarification on X, Y.", "patches": [] }}
+{ "reasoning": "Need clarification on X, Y.", "patches": [] }
 ```
 
 BEGIN.

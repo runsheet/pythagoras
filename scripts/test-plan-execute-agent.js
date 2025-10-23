@@ -178,26 +178,36 @@ async function testPlanExecuteAgent() {
 
     console.log('✨ PlanExecuteAgent test completed successfully!');
 
-    // Optional: Save results to file
-    if (process.env.SAVE_RESULTS) {
-      const fs = await import('fs');
-      const outputFile = `test-results-${Date.now()}.json`;
-      fs.writeFileSync(
-        outputFile,
-        JSON.stringify(
-          {
-            plan: result.plan,
-            results: result.results,
-            summary: result.summary,
-            patches: result.patches,
-            timestamp: new Date().toISOString(),
-          },
-          null,
-          2
-        )
-      );
-      console.log(`\n💾 Results saved to: ${outputFile}`);
-    }
+    // Save results to file
+    const fs = await import('fs');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+    const outputFile = `agent-test-${timestamp[0]}-${timestamp[1].split('Z')[0]}.json`;
+
+    const fullResults = {
+      objective,
+      model: model,
+      timestamp: new Date().toISOString(),
+      plan: result.plan,
+      results: result.results,
+      summary: result.summary,
+      patches: result.patches,
+      memory: memory.messages.map((msg) => ({
+        type: msg._getType(),
+        content: msg.content,
+      })),
+      config: {
+        systemPromptLength: config.systemPrompt.length,
+        knowledgeBases: config.knowledgeBases.map((kb) => ({
+          name: kb.name,
+          contentLength: kb.content.length,
+        })),
+        mcpServers: Array.from(config.mcpServers.keys()),
+        toolsAvailable: tools.length,
+      },
+    };
+
+    fs.writeFileSync(outputFile, JSON.stringify(fullResults, null, 2));
+    console.log(`\n💾 Full results saved to: ${outputFile}`);
   } catch (error) {
     console.error('\n❌ Error testing PlanExecuteAgent:');
     console.error(error);

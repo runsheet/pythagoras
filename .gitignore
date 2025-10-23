@@ -100,3 +100,8 @@ __tests__/runner/*
 # IDE files
 .idea
 *.code-workspace
+
+# Test results
+agent-test-*.json
+tools-test-*.json
+test-results-*.json

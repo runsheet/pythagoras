@@ -107,12 +107,8 @@ export class PlanExecuteAgent {
       })
       .join('\n\n');
 
-    // Create planning prompt
-    const planningPrompt = ChatPromptTemplate.fromMessages([
-      ['system', this.config.systemPrompt],
-      [
-        'system',
-        `
+    // Escape any template syntax in the system prompt
+    const systemPrompt2 = `
 AVAILABLE TOOLS:
 ${toolDescriptions}
 
@@ -121,27 +117,25 @@ ${knowledgeContext}
 
 CONVERSATION HISTORY:
 ${historyText}
-`,
-      ],
-      [
-        'user',
-        `
-Objective: {{objective}}
+`;
+
+    const userPrompt = `
+Objective: ${objective}
 
 Create a detailed execution plan to address this objective. Return a JSON object with:
-{{{{
+{
   "objective": "restated objective",
   "reasoning": "high-level reasoning about approach",
   "steps": [
-    {{{{
+    {
       "step": 1,
       "action": "description of action",
       "reasoning": "why this step",
       "tool": "tool name if applicable",
       "completed": false
-    }}}}
+    }
   ]
-}}}}
+}
 
 Consider:
 1. What diagnostic information is needed?
@@ -151,13 +145,18 @@ Consider:
 5. How to ensure the fix is safe and reversible?
 
 Return ONLY the JSON, no markdown formatting.
-`,
-      ],
+`;
+
+    // Create planning prompt
+    const planningPrompt = ChatPromptTemplate.fromMessages([
+      ['system', this.escapeTemplateSyntax(this.config.systemPrompt)],
+      ['system', this.escapeTemplateSyntax(systemPrompt2)],
+      ['user', this.escapeTemplateSyntax(userPrompt)],
     ]);
 
     const chain = RunnableSequence.from([planningPrompt, this.model]);
 
-    const response = await chain.invoke({ objective });
+    const response = await chain.invoke({});
     const content =
       typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
 
@@ -228,12 +227,7 @@ Return ONLY the JSON, no markdown formatting.
    * Execute a single step
    */
   private async executeStep(step: PlanStep, objective: string): Promise<StepResult> {
-    // Create execution prompt
-    const executionPrompt = ChatPromptTemplate.fromMessages([
-      ['system', this.config.systemPrompt],
-      [
-        'user',
-        `
+    const userPrompt = `
 Objective: ${objective}
 Current Step: ${step.action}
 Reasoning: ${step.reasoning}
@@ -242,8 +236,12 @@ Execute this step and provide the result. If you need to use a tool, describe wh
 Focus on safety and explain any commands or changes you would make.
 
 Provide a detailed output of what was done or what should be done.
-`,
-      ],
+`;
+
+    // Create execution prompt
+    const executionPrompt = ChatPromptTemplate.fromMessages([
+      ['system', this.escapeTemplateSyntax(this.config.systemPrompt)],
+      ['user', this.escapeTemplateSyntax(userPrompt)],
     ]);
 
     const chain = RunnableSequence.from([executionPrompt, this.model]);
@@ -295,11 +293,7 @@ Provide a detailed output of what was done or what should be done.
       .map((r) => `Step ${r.step}: ${r.success ? 'Success' : 'Failed'}\nOutput: ${r.output}`)
       .join('\n\n');
 
-    const patchPrompt = ChatPromptTemplate.fromMessages([
-      ['system', this.config.systemPrompt],
-      [
-        'user',
-        `
+    const userPrompt = `
 Based on the following execution results, generate file patches that implement the fixes.
 
 Execution Results:
@@ -307,11 +301,11 @@ ${resultsText}
 
 Return a JSON array of patches:
 [
-  {{{{
+  {
     "file": "path/to/file",
     "action": "create or update or delete",
     "content": "file content (for create/update)"
-  }}}}
+  }
 ]
 
 Guidelines:
@@ -323,8 +317,11 @@ Guidelines:
 - Maximum 25 files
 
 Return ONLY the JSON array, no markdown formatting.
-`,
-      ],
+    `;
+
+    const patchPrompt = ChatPromptTemplate.fromMessages([
+      ['system', this.escapeTemplateSyntax(this.config.systemPrompt)],
+      ['user', this.escapeTemplateSyntax(userPrompt)],
     ]);
 
     const chain = RunnableSequence.from([patchPrompt, this.model]);
@@ -375,6 +372,19 @@ Return ONLY the JSON array, no markdown formatting.
         ],
       };
     }
+  }
+
+  /**
+   * Escape template syntax to prevent LangChain from interpreting
+   * curly braces in the content as template variables
+   */
+  private escapeTemplateSyntax(content: string): string {
+    // Replace single { with {{ and single } with }} so LangChain treats them as literals
+    // This regex uses negative lookahead/lookbehind to only match single braces
+    const escapedContent = content
+      .replace(/\{(?!\{)/g, '{{') // { not followed by {
+      .replace(/(?<!\})\}/g, '}}'); // } not preceded by }
+    return escapedContent;
   }
 
   /**
