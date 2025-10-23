@@ -126,22 +126,22 @@ ${historyText}
       [
         'user',
         `
-Objective: {objective}
+Objective: {{objective}}
 
 Create a detailed execution plan to address this objective. Return a JSON object with:
-{{
+{{{{
   "objective": "restated objective",
   "reasoning": "high-level reasoning about approach",
   "steps": [
-    {{
+    {{{{
       "step": 1,
       "action": "description of action",
       "reasoning": "why this step",
       "tool": "tool name if applicable",
       "completed": false
-    }}
+    }}}}
   ]
-}}
+}}}}
 
 Consider:
 1. What diagnostic information is needed?
@@ -307,11 +307,11 @@ ${resultsText}
 
 Return a JSON array of patches:
 [
-  {{
+  {{{{
     "file": "path/to/file",
-    "action": "create" | "update" | "delete",
+    "action": "create or update or delete",
     "content": "file content (for create/update)"
-  }}
+  }}}}
 ]
 
 Guidelines:

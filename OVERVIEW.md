@@ -3,6 +3,7 @@
 ## What Is This?
 
 A **production-ready, configurable AI Agent** that:
+
 - Reads GitHub issues
 - Analyzes problems using AI
 - Creates execution plans
@@ -16,30 +17,37 @@ Built with **LangChain**, **MCP (Model Context Protocol)**, and **GitHub Actions
 ## ✨ What Makes It Special?
 
 ### 1. Fully Configurable
+
 No hardcoded behavior. Everything configured via working directory:
+
 - `system-prompt.md` - Agent personality and guidelines
 - `knowledge-base/` - Domain-specific docs
 - `mcp-servers/` - External tool integrations
 
 ### 2. Plan & Execute Pattern
+
 Uses LangChain's Plan-Execute approach:
+
 1. **Plan**: Analyze issue, create detailed execution plan
 2. **Execute**: Run each step, update progress
 3. **Summarize**: Generate patches and create PR
 
 ### 3. GitHub-Native Memory
+
 - Issues and comments = conversation history
 - Persistent across runs
 - Full audit trail
 - No external database needed
 
 ### 4. MCP Tool Integration
+
 - Automatic connection to MCP servers
 - Tool discovery via `listTools()`
 - Unified tool execution interface
 - Extensible with any MCP-compatible tool
 
 ### 5. Human-in-the-Loop
+
 - All changes via Pull Request
 - Detailed reasoning provided
 - Easy to review and revert
@@ -93,6 +101,7 @@ example/
 ## 🚀 Quick Start (5 Minutes)
 
 ### 1. Prerequisites
+
 - GitHub repository
 - OpenAI API key
 - Node.js 24+ (for development)
@@ -100,11 +109,13 @@ example/
 ### 2. Setup Secrets
 
 Add to GitHub repository secrets:
+
 - `OPENAI_API_KEY` - Your OpenAI key
 
 ### 3. Create Configuration
 
 Already included in `example/` directory:
+
 - ✅ `system-prompt.md` - Ready to use
 - ✅ `knowledge-base/` - Sample knowledge base
 - ✅ `mcp-servers/` - Sample MCP config
@@ -135,6 +146,7 @@ Already included in `example/` directory:
 **Issue**: "Build server out of disk space"
 
 **Agent Does**:
+
 1. Reviews disk space KB article
 2. Creates cleanup script
 3. Adds scheduled workflow
@@ -146,6 +158,7 @@ Already included in `example/` directory:
 **Issue**: "Add logging to payment processor"
 
 **Agent Does**:
+
 1. Analyzes codebase
 2. Identifies key functions
 3. Adds logging statements
@@ -157,6 +170,7 @@ Already included in `example/` directory:
 **Issue**: "Update production deployment config"
 
 **Agent Does**:
+
 1. Reviews deployment KB
 2. Updates configuration files
 3. Validates changes
@@ -228,14 +242,14 @@ Human Review
 
 ## 🎯 Key Technologies
 
-| Technology | Purpose |
-|------------|---------|
-| **LangChain** | Agent framework, Plan-Execute pattern |
-| **OpenAI** | LLM for planning and execution |
-| **MCP SDK** | Model Context Protocol integration |
-| **GitHub API** | Issues, comments, PRs |
-| **TypeScript** | Type-safe implementation |
-| **Rollup** | Bundling for GitHub Actions |
+| Technology     | Purpose                               |
+| -------------- | ------------------------------------- |
+| **LangChain**  | Agent framework, Plan-Execute pattern |
+| **OpenAI**     | LLM for planning and execution        |
+| **MCP SDK**    | Model Context Protocol integration    |
+| **GitHub API** | Issues, comments, PRs                 |
+| **TypeScript** | Type-safe implementation              |
+| **Rollup**     | Bundling for GitHub Actions           |
 
 ---
 
@@ -249,10 +263,11 @@ Human Review
 You are Pythagoras, an AI agent that...
 
 Core Principles:
+
 1. Safety First
 2. Human in the Loop
 3. Clear Reasoning
-...
+   ...
 ```
 
 ### Knowledge Base
@@ -263,9 +278,10 @@ Core Principles:
 ## Disk Space Diagnostics
 
 To diagnose disk space:
+
 1. Run df -h
 2. Check /tmp directories
-...
+   ...
 ```
 
 ### MCP Server
@@ -287,21 +303,25 @@ env:
 ## 🔒 Safety & Security
 
 ### Human-in-the-Loop
+
 ✅ All changes via PR review
 ✅ No automatic merging
 ✅ Easy to revert
 
 ### Audit Trail
+
 ✅ Full history in GitHub
 ✅ Step-by-step reasoning
 ✅ Clear change descriptions
 
 ### Minimal Permissions
+
 ✅ Only required GitHub permissions
 ✅ Secrets via GitHub Secrets
 ✅ No external storage needed
 
 ### Safe Defaults
+
 ✅ No destructive operations
 ✅ Dry-run approach
 ✅ Validation before changes
@@ -329,7 +349,7 @@ Create new `.yml` files in `mcp-servers/`:
 ```yaml
 # mcp-servers/aws.yml
 command: /usr/local/bin/aws-mcp
-args: ["--region", "us-east-1"]
+args: ['--region', 'us-east-1']
 env:
   AWS_ACCESS_KEY_ID: ${AWS_KEY}
 ```
@@ -342,10 +362,12 @@ Edit `system-prompt.md`:
 You are a specialized agent for [domain].
 
 Focus on:
+
 - [Priority 1]
 - [Priority 2]
 
 Always:
+
 - [Rule 1]
 - [Rule 2]
 ```
@@ -392,6 +414,7 @@ Need to:
    - GitHub MCP server for repo access
 
 2. **Creates Plan**
+
    ```
    Step 1: Review recent deployment changes
    Step 2: Check database query performance
@@ -401,6 +424,7 @@ Need to:
    ```
 
 3. **Executes & Updates Issue**
+
    ```
    🤖 Step 1: Review recent deployment changes
    Found: Database N+1 query issue in user endpoint
@@ -414,6 +438,7 @@ Need to:
    ```
 
 4. **Creates PR**
+
    ```
    [Pythagoras] Fix API performance issues
 
@@ -455,6 +480,7 @@ Need to:
 ## 🤝 Contributing
 
 This is a foundational implementation. Extend it:
+
 - Add more sophisticated planning
 - Implement tool result caching
 - Support multiple LLM providers

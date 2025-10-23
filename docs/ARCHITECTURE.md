@@ -297,8 +297,22 @@ args:
   - --mode
   - server
 env:
-  TOOL_API_KEY: ${TOOL_API_KEY}
+  # Environment variables support ${env:VAR_NAME} substitution
+  # This will read from the process environment at runtime
+  TOOL_API_KEY: ${env:TOOL_API_KEY}
+
+  # Or use literal values
+  TOOL_MODE: production
 ```
+
+**Environment Variable Substitution:**
+
+The `env` field supports `${env:VAR_NAME}` substitution patterns:
+
+- `${env:GITHUB_TOKEN}` - Reads from `process.env.GITHUB_TOKEN`
+- Literal values are passed as-is
+- Only the environment variables defined in the config are passed to the MCP server
+- If a referenced env var is not set, a warning will be logged
 
 ### Custom Knowledge
 
@@ -353,9 +367,16 @@ Core principles:
 ### Agent Execution Issues
 
 - Check OPENAI_API_KEY is set
-- Verify model name is correct
-- Review system prompt for clarity
-- Check knowledge base files exist
+- Verify token limits are not exceeded
+- Review error messages in logs
+
+### Template Errors ("Single '}' in template")
+
+If you see `Error: Single '}' in template`, this means there are unescaped curly braces in your configuration files. LangChain prompt templates use `{variable}` syntax, so literal braces must be escaped:
+
+- **Escape braces by doubling them**: Use `{{` instead of `{` and `}}` instead of `}`
+- **Common locations**: `system-prompt.md` and `knowledge-base/*.md` files
+- **Example**: JSON examples should use `{{ "key": "value" }}` instead of `{ "key": "value" }`
 
 ## Future Enhancements
 

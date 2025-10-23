@@ -31,6 +31,7 @@ export class ToolsManager {
         await this.connectToServer(serverName, config);
       } catch (error) {
         console.error(`Failed to connect to MCP server ${serverName}:`, error);
+        throw error;
       }
     }
   }
@@ -41,19 +42,15 @@ export class ToolsManager {
   private async connectToServer(serverName: string, config: MCPServerConfig): Promise<void> {
     console.log(`Connecting to MCP server: ${serverName}`);
 
-    // Create transport based on configuration
+    // Process environment variables with substitution support
     const envVars: Record<string, string> = {};
-
-    // Copy process.env, filtering out undefined values
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
-        envVars[key] = value;
+    for (const [key, value] of Object.entries(config.env || {})) {
+      // Support ${env:VAR_NAME} substitution
+      const resolvedValue = this.resolveEnvValue(value);
+      if (resolvedValue === undefined) {
+        throw new Error(`Environment variable ${key} could not be resolved`);
       }
-    }
-
-    // Override with config.env
-    if (config.env) {
-      Object.assign(envVars, config.env);
+      envVars[key] = resolvedValue;
     }
 
     const transport = new StdioClientTransport({
@@ -90,6 +87,30 @@ export class ToolsManager {
 
     this.tools.set(serverName, serverTools);
     console.log(`Discovered ${serverTools.length} tool(s) from ${serverName}`);
+  }
+
+  /**
+   * Resolve environment variable value with support for ${env:VAR_NAME} substitution
+   */
+  private resolveEnvValue(value: string): string | undefined {
+    // Check for ${env:VAR_NAME} pattern
+    const envPattern = /^\$\{env:([^}]+)\}$/;
+    const match = value.match(envPattern);
+
+    if (match) {
+      // Extract the variable name and look it up in process.env
+      const envVarName = match[1];
+      const envValue = process.env[envVarName];
+
+      if (envValue === undefined) {
+        console.warn(`Environment variable ${envVarName} is not set`);
+      }
+
+      return envValue;
+    }
+
+    // If no substitution pattern, return the literal value
+    return value;
   }
 
   /**

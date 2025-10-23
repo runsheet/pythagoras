@@ -5,19 +5,23 @@
 A fully functional, configurable AI Agent with:
 
 ✅ **Configurable Components**:
+
 - System prompts
 - Knowledge bases
 - MCP server integrations
 
 ✅ **LangChain Integration**:
+
 - Plan and Execute agent pattern
 - Structured reasoning and execution
 
 ✅ **GitHub Integration**:
+
 - Issues/comments as persistent memory
 - Automatic PR creation for human review
 
 ✅ **MCP Tool Discovery**:
+
 - Automatic connection to MCP servers
 - Tool listing and execution
 
@@ -39,17 +43,20 @@ Settings → Secrets and variables → Actions → New repository secret
 The agent is configured via the `example/` directory:
 
 **example/system-prompt.md** - Agent behavior:
+
 ```markdown
 You are Pythagoras, an AI agent that helps diagnose and fix issues.
 
 Core Principles:
+
 1. Safety First - never execute destructive commands without approval
 2. Human in the Loop - always present changes via PR
 3. Clear Reasoning - explain your approach
-...
+   ...
 ```
 
-**example/knowledge-base/*.md** - Domain knowledge:
+**example/knowledge-base/\*.md** - Domain knowledge:
+
 ```
 example/knowledge-base/
 ├── disk_space.md       # Disk diagnostics
@@ -57,7 +64,8 @@ example/knowledge-base/
 └── troubleshooting.md  # Common issues
 ```
 
-**example/mcp-servers/*.yml** - Tool configurations:
+**example/mcp-servers/\*.yml** - Tool configurations:
+
 ```yaml
 # example/mcp-servers/github.yml
 command: docker
@@ -77,12 +85,14 @@ env:
 The workflow at `.github/workflows/pythagoras.yml` is already configured.
 
 It triggers when:
+
 - Issue is labeled with `pythagoras`
 - Comment contains `@pythagoras`
 
 ### 4. Test It!
 
 1. **Create an Issue**:
+
    ```
    Title: Build server out of disk space
 
@@ -225,6 +235,7 @@ pythagoras/
 ### Example 1: Disk Space Issue
 
 **Issue**:
+
 ```
 Title: Build agents running out of disk space
 
@@ -234,6 +245,7 @@ Need to diagnose and create cleanup automation.
 ```
 
 **Agent Response**:
+
 1. Creates execution plan with steps
 2. Reviews disk space diagnostics knowledge
 3. Proposes:
@@ -245,6 +257,7 @@ Need to diagnose and create cleanup automation.
 ### Example 2: Deployment Problem
 
 **Issue**:
+
 ```
 Title: Deployment failing on production
 
@@ -254,6 +267,7 @@ Need to investigate and fix.
 ```
 
 **Agent Response**:
+
 1. Analyzes deployment procedures
 2. Reviews logs (via MCP tools if configured)
 3. Identifies root cause
@@ -263,12 +277,14 @@ Need to investigate and fix.
 ### Example 3: Custom Request
 
 **Comment on existing issue**:
+
 ```
 @pythagoras Can you create a monitoring dashboard
 for our API endpoints?
 ```
 
 **Agent Response**:
+
 1. Loads conversation history
 2. Reviews monitoring guidelines
 3. Creates dashboard configuration
@@ -289,7 +305,7 @@ Create new markdown files in `example/knowledge-base/`:
 1. Always validate inputs
 2. Use parameterized queries
 3. Keep dependencies updated
-...
+   ...
 ```
 
 ### Add MCP Server
@@ -315,10 +331,11 @@ Edit `example/system-prompt.md` to change agent behavior:
 You are a specialized agent for [your domain].
 
 Guidelines:
+
 - Focus on [specific area]
 - Always consider [important factor]
 - Prefer [approach]
-...
+  ...
 ```
 
 ### Change Model
@@ -338,6 +355,7 @@ Use different OpenAI models:
 ### View Logs
 
 Check GitHub Actions logs:
+
 1. Go to Actions tab
 2. Find the workflow run
 3. Click on the job
@@ -346,6 +364,7 @@ Check GitHub Actions logs:
 ### Check Errors
 
 If something fails:
+
 1. Check workflow logs for errors
 2. Verify secrets are set correctly
 3. Ensure MCP servers are accessible
@@ -363,20 +382,24 @@ env:
 ## 🔒 Security
 
 ### Secrets Management
+
 - Never commit secrets to repository
 - Use GitHub Secrets for sensitive data
 - Rotate tokens regularly
 
 ### Permissions
+
 Workflow has minimal required permissions:
+
 ```yaml
 permissions:
-  contents: write      # Create branches
+  contents: write # Create branches
   pull-requests: write # Create PRs
-  issues: write        # Comment on issues
+  issues: write # Comment on issues
 ```
 
 ### Review Process
+
 - All changes go through PR
 - Human approval required
 - Easy to revert if needed
@@ -405,20 +428,24 @@ When agent runs, it creates:
 ## 🚨 Troubleshooting
 
 ### "No issue number provided"
+
 - Ensure workflow is triggered by issue event
 - Or provide `issue_number` input
 
 ### "MCP server connection failed"
+
 - Check server command/args
 - Verify environment variables
 - Ensure docker/binary is available
 
 ### "OpenAI API error"
+
 - Verify `OPENAI_API_KEY` secret is set
 - Check API key is valid
 - Check for rate limits
 
 ### "Permission denied"
+
 - Ensure workflow has correct permissions
 - Check GitHub token has repo access
 

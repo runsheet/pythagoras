@@ -48514,6 +48514,7 @@ class ToolsManager {
             }
             catch (error) {
                 console.error(`Failed to connect to MCP server ${serverName}:`, error);
+                throw error;
             }
         }
     }
@@ -48522,17 +48523,15 @@ class ToolsManager {
      */
     async connectToServer(serverName, config) {
         console.log(`Connecting to MCP server: ${serverName}`);
-        // Create transport based on configuration
+        // Process environment variables with substitution support
         const envVars = {};
-        // Copy process.env, filtering out undefined values
-        for (const [key, value] of Object.entries(process.env)) {
-            if (value !== undefined) {
-                envVars[key] = value;
+        for (const [key, value] of Object.entries(config.env || {})) {
+            // Support ${env:VAR_NAME} substitution
+            const resolvedValue = this.resolveEnvValue(value);
+            if (resolvedValue === undefined) {
+                throw new Error(`Environment variable ${key} could not be resolved`);
             }
-        }
-        // Override with config.env
-        if (config.env) {
-            Object.assign(envVars, config.env);
+            envVars[key] = resolvedValue;
         }
         const transport = new StdioClientTransport({
             command: config.command,
@@ -48557,6 +48556,25 @@ class ToolsManager {
         }));
         this.tools.set(serverName, serverTools);
         console.log(`Discovered ${serverTools.length} tool(s) from ${serverName}`);
+    }
+    /**
+     * Resolve environment variable value with support for ${env:VAR_NAME} substitution
+     */
+    resolveEnvValue(value) {
+        // Check for ${env:VAR_NAME} pattern
+        const envPattern = /^\$\{env:([^}]+)\}$/;
+        const match = value.match(envPattern);
+        if (match) {
+            // Extract the variable name and look it up in process.env
+            const envVarName = match[1];
+            const envValue = process.env[envVarName];
+            if (envValue === undefined) {
+                console.warn(`Environment variable ${envVarName} is not set`);
+            }
+            return envValue;
+        }
+        // If no substitution pattern, return the literal value
+        return value;
     }
     /**
      * Get all available tools from all connected MCP servers
@@ -90258,22 +90276,22 @@ ${historyText}
             [
                 'user',
                 `
-Objective: {objective}
+Objective: {{objective}}
 
 Create a detailed execution plan to address this objective. Return a JSON object with:
-{{
+{{{{
   "objective": "restated objective",
   "reasoning": "high-level reasoning about approach",
   "steps": [
-    {{
+    {{{{
       "step": 1,
       "action": "description of action",
       "reasoning": "why this step",
       "tool": "tool name if applicable",
       "completed": false
-    }}
+    }}}}
   ]
-}}
+}}}}
 
 Consider:
 1. What diagnostic information is needed?
@@ -90409,11 +90427,11 @@ ${resultsText}
 
 Return a JSON array of patches:
 [
-  {{
+  {{{{
     "file": "path/to/file",
-    "action": "create" | "update" | "delete",
+    "action": "create or update or delete",
     "content": "file content (for create/update)"
-  }}
+  }}}}
 ]
 
 Guidelines:
@@ -90791,6 +90809,16 @@ async function run() {
         coreExports.setFailed(errorMessage);
     }
 }
-// Run the action
+
+/**
+ * Entry point for the Pythagoras AI Agent GitHub Action
+ *
+ * This file serves two purposes:
+ * 1. Runs the GitHub Action when executed
+ * 2. Exports all components for testing and programmatic use
+ */
+// Run the GitHub Action
 run();
+
+export { ConfigLoader, GitHubMemoryManager, PRManager, PlanExecuteAgent, ToolsManager, run };
 //# sourceMappingURL=index.js.map
