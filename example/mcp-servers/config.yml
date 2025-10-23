@@ -1,5 +1,0 @@
-name: example_toolset
-endpoint: local
-commands:
-  - name: hello
-    cmd: echo 'hello world'

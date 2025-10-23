@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: "Prompt for Pythagoras"
+        description: 'Prompt for Pythagoras'
         required: true
       model:
-        description: "Optional model override"
+        description: 'Optional model override'
         required: false
 jobs:
   propose:
@@ -23,4 +23,4 @@ jobs:
         with:
           prompt: ${{ inputs.prompt }}
           model: ${{ inputs.model }}
-          dry_run: "false"
+          dry_run: 'false'
