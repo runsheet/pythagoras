@@ -1,10 +1,9 @@
 // Configuration
 export { ConfigLoader } from './config/config-loader.js';
-export type { AgentConfiguration, KnowledgeBase, MCPServerConfig } from './config/types.js';
+export type { AgentConfiguration, KnowledgeBase } from './config/types.js';
 
 // Tools
 export { ToolsManager } from './tools/tools-manager.js';
-export type { ToolInfo } from './tools/tools-manager.js';
 
 // Memory
 export { GitHubMemoryManager } from './memory/github-memory.js';
@@ -18,7 +17,7 @@ export type {
   ExecutionResult,
   StepResult,
   FilePatch,
-} from './agent/plan-execute-agent.js';
+} from './agent/types.js';
 
 // PR Management
 export { PRManager } from './pr/pr-manager.js';

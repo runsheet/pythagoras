@@ -49,9 +49,8 @@ export async function run(): Promise<void> {
 
     // Step 2: Initialize Tools Manager
     console.log('\n🔧 Step 2: Initializing tools...');
-    const toolsManager = new ToolsManager();
-    await toolsManager.initialize(config.mcpServers);
-    const tools = toolsManager.listTools();
+    const toolsManager = new ToolsManager(config.mcpServers);
+    const tools = await toolsManager.getTools();
     console.log(`✅ Initialized ${tools.length} tool(s)`);
 
     // Step 3: Initialize GitHub Memory

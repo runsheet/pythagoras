@@ -2,16 +2,12 @@
  * Configuration types for Pythagoras AI Agent
  */
 
-export interface MCPServerConfig {
-  command: string;
-  args?: string[];
-  env?: Record<string, string>;
-}
+import { Connection } from "@langchain/mcp-adapters";
 
 export interface AgentConfiguration {
   systemPrompt: string;
   knowledgeBases: KnowledgeBase[];
-  mcpServers: Map<string, MCPServerConfig>;
+  mcpServers: Map<string, Connection>;
 }
 
 export interface KnowledgeBase {

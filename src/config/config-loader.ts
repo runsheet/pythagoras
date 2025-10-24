@@ -1,7 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
-import { AgentConfiguration, KnowledgeBase, MCPServerConfig } from './types.js';
+import { AgentConfiguration, KnowledgeBase } from './types.js';
+import { Connection } from '@langchain/mcp-adapters';
 
 /**
  * ConfigLoader loads the agent configuration from a working directory
@@ -83,7 +84,7 @@ export class ConfigLoader {
   /**
    * Load all MCP server configurations from the mcp-servers/ directory
    */
-  private async loadMCPServers(): Promise<Map<string, MCPServerConfig>> {
+  private async loadMCPServers(): Promise<Map<string, Connection>> {
     const mcpServersPath = path.join(this.workingDirectory, 'mcp-servers');
 
     if (!fs.existsSync(mcpServersPath)) {
@@ -93,7 +94,7 @@ export class ConfigLoader {
       return new Map();
     }
 
-    const mcpServers = new Map<string, MCPServerConfig>();
+    const mcpServers = new Map<string, Connection>();
     const files = fs.readdirSync(mcpServersPath);
 
     for (const file of files) {
@@ -105,7 +106,7 @@ export class ConfigLoader {
       const fileContent = fs.readFileSync(filePath, 'utf-8');
 
       try {
-        const config = yaml.load(fileContent) as MCPServerConfig;
+        const config = yaml.load(fileContent) as Connection;
         const serverName = path.basename(file, path.extname(file));
         mcpServers.set(serverName, config);
         console.log(`Loaded MCP server configuration: ${serverName}`);

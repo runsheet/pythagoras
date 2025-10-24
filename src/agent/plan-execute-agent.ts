@@ -2,62 +2,15 @@ import { ChatOpenAI } from '@langchain/openai';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { AgentConfiguration } from '../config/types.js';
-import { ToolsManager, ToolInfo } from '../tools/tools-manager.js';
+import { ToolsManager } from '../tools/tools-manager.js';
 import { GitHubMemoryManager } from '../memory/github-memory.js';
-
-/**
- * Represents a step in the execution plan
- */
-export interface PlanStep {
-  step: number;
-  action: string;
-  reasoning: string;
-  tool?: string;
-  completed: boolean;
-}
-
-/**
- * Represents the complete execution plan
- */
-export interface ExecutionPlan {
-  objective: string;
-  steps: PlanStep[];
-  reasoning: string;
-}
-
-/**
- * Result of executing a plan
- */
-export interface ExecutionResult {
-  plan: ExecutionPlan;
-  results: StepResult[];
-  summary: string;
-  patches: FilePatch[];
-}
-
-/**
- * Result of executing a single step
- */
-export interface StepResult {
-  step: number;
-  success: boolean;
-  output: string;
-  error?: string;
-}
-
-/**
- * File patch to be applied
- */
-export interface FilePatch {
-  file: string;
-  action: 'create' | 'update' | 'delete';
-  content?: string;
-}
+import { ExecutionPlan, FilePatch, PlanStep, StepResult, ExecutionResult, PythangorasAgent } from './types.js';
+import { DynamicStructuredTool } from 'langchain';
 
 /**
  * Plan and Execute Agent using LangChain
  */
-export class PlanExecuteAgent {
+export class PlanExecuteAgent implements PythangorasAgent {
   private model: ChatOpenAI;
   private config: AgentConfiguration;
   private toolsManager: ToolsManager;
@@ -88,9 +41,9 @@ export class PlanExecuteAgent {
     console.log('Creating execution plan...');
 
     // Get available tools
-    const tools = this.toolsManager.listTools();
+    const tools = await this.toolsManager.getTools();
     const toolDescriptions = tools
-      .map((tool: ToolInfo) => `- ${tool.name}: ${tool.description || 'No description'}`)
+      .map((tool: DynamicStructuredTool) => `- ${tool.name}: ${tool.description || 'No description'}`)
       .join('\n');
 
     // Get knowledge base context
