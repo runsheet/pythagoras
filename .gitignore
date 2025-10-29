@@ -105,3 +105,8 @@ __tests__/runner/*
 agent-test-*.json
 tools-test-*.json
 test-results-*.json
+
+/packages/**/dist/
+
+# Turborepo
+.turbo

@@ -1,145 +1,269 @@
-# Pythagoras AI Fixer GitHub Action
+# Pythagoras
 
-Pythagoras is a human-in-the-loop AI automation action. It reads a prompt (and optionally an issue), gathers repository context, knowledge base documents, and MCP (Model Context Protocol) server configurations, then proposes changes via a Pull Request. After human review & merge, a follow-up workflow can apply runtime fixes (e.g., executing scripts, SSH diagnostics) using the merged artifacts.
+A TypeScript library for building AI agent systems with MCP (Model Context Protocol) server integration, LangGraph orchestration, and dynamic tool management.
 
-## Key Features
+## 📦 Monorepo Structure
 
-- Uses GitHub Models (default: `gpt-4.1-mini`) with optional override input.
-- Knowledge base ingestion from `knowledge_base/` plain text/markdown files.
-- MCP server configuration ingestion from `config/mcp/*.yml`.
-- Safety guards: limit number of changed files (hard limit 25) and per-file size (50KB).
-- Human-in-the-loop: always proposes via PR; a separate workflow can perform apply phase.
-- Convention over configuration: minimal action inputs, relies on repo structure.
-- Extensible architecture (SOLID services: config, memory, model, git, render).
+This repository is a pnpm + Turborepo monorepo:
 
-## Inputs (Current Minimal Set)
-
-| Name                | Description                                                | Default        |
-| ------------------- | ---------------------------------------------------------- | -------------- |
-| `working_directory` | Root path for conventions (KB, MCP, system prompt).        | `.`            |
-| `model`             | GitHub Model ID to use.                                    | `gpt-4.1-mini` |
-| `issue_number`      | Issue number to seed memory context (title/body/comments). | (optional)     |
-| `user_prompt_path`  | File path containing a user prompt (fallback if no issue). | (optional)     |
-
-## Outputs
-
-| Name        | Description                                  |
-| ----------- | -------------------------------------------- |
-| `pr_number` | The created (or updated) proposal PR number. |
-
-## Example Workflow (Proposal Phase)
-
-```yaml
-name: Pythagoras Proposal
-on:
-  workflow_dispatch:
-    inputs:
-      prompt:
-        description: 'Prompt for Pythagoras'
-        required: true
-      model:
-        description: 'Optional model override'
-        required: false
-  issues:
-    types: [opened]
-
-jobs:
-  propose:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run Pythagoras (issue triggered)
-        if: github.event_name == 'issues'
-        uses: ./. # local action
-        with:
-          working_directory: .
-          issue_number: ${{ github.event.issue.number }}
-      - name: Run Pythagoras (manual prompt file)
-        if: github.event_name == 'workflow_dispatch'
-        uses: ./. # local action
-        with:
-          working_directory: .
-          model: ${{ inputs.model }}
-          user_prompt_path: prompts/request.md
+```
+pythagoras/
+├── packages/
+│   └── core/          # @runsheet/pythagoras-core - Main library package
+├── pnpm-workspace.yaml
+├── turbo.json
+└── package.json       # Root workspace coordinator
 ```
 
-## Example Workflow (Apply Phase After Merge)
+## Features
 
-Trigger on `pull_request` closed & merged to perform runtime actions using merged scripts/configs.
+- **MCP Server Integration**: Connect to stdio and HTTP/SSE MCP servers
+- **Tool Management**: Discover and load tool configurations from YAML
+- **LangGraph Support**: Built-in adapters for LangChain and LangGraph workflows
+- **Type-Safe**: Full TypeScript support with comprehensive type definitions
+- **Flexible Configuration**: Convention-based config discovery with override options
+- **Memory Management**: Context and conversation memory utilities
 
-```yaml
-name: Pythagoras Apply
-on:
-  pull_request:
-    types: [closed]
-jobs:
-  apply:
-    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'pythagoras/proposal-')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Execute Fixes
-        run: |
-          if [ -f scripts/cleanup.sh ]; then
-            bash scripts/cleanup.sh
-          else
-            echo 'No cleanup script found.'
-          fi
+## Installation
+
+```bash
+npm install @runsheet/pythagoras-core
 ```
 
-## Knowledge Base
+## Development
 
-Place markdown or text files in `knowledge_base/`. These become part of the model context. Keep them concise; large files may need chunking in a future enhancement.
+This project uses pnpm and Turborepo for monorepo management.
 
-## MCP Server Configuration
+### Prerequisites
 
-Add YAML files to `config/mcp/` describing available servers/tools (schema evolves). These are surfaced to the model prompting layer for tool selection.
+- Node.js >= 24.0.0
+- pnpm >= 9.15.0
 
-Example: `config/mcp/disk_inspector.yml`
+### Setup
 
-```yaml
-name: disk_inspector
-endpoint: ssh
-commands:
-  - name: df
-    cmd: df -h
-  - name: du_tmp
-    cmd: du -sh /opt/teamcity-agent/temp
+```bash
+# Install dependencies
+pnpm install
+
+# Build all packages
+pnpm build
+
+# Run tests
+pnpm test
+
+# Run linter
+pnpm lint
+
+# Format code
+pnpm format
 ```
 
-## Human-in-the-Loop Flow (TeamCity Agent Example)
+### Working with the Core Package
 
-1. User opens issue: "TeamCity Agent out of disk space" (body lists agent hostname).
-2. Proposal workflow runs action; model suggests adding a cleanup script + diagnostic steps.
-3. PR is created with script & reasoning.
-4. Reviewer approves & merges.
-5. Apply workflow runs: executes `scripts/cleanup.sh`, potentially extended to SSH into agent (future enhancement: add secrets & remote execution logic).
+```bash
+# Navigate to core package
+cd packages/core
 
-## Model Call Implementation & Endpoint/Token Resolution
+# Build only core
+pnpm build
 
-During `loadConfig()` the action resolves:
+# Watch mode for development
+pnpm build:watch
 
-- Bearer token from `GITHUB_TOKEN` env (required unless using dummy mode).
-- Model endpoint from `PYTHAGORAS_MODEL_ENDPOINT` (falls back to `https://models.github.ai/inference/chat/completions`).
+# Run tests for core
+pnpm test
+```
 
-It then performs a real HTTPS POST (Node `https`) to the endpoint.
+## Quick Start
 
-Override example:
+### Basic Tool Manager Usage
+
+```typescript
+import { loadTools } from '@runsheet/pythagoras-core/tools';
+import { join } from 'path';
+
+// Load MCP server configurations from a directory
+const tm = loadTools({
+  dir: join(process.cwd(), 'config/mcp'),
+  inputVars: {}
+});
+
+// List all discovered servers
+for (const tool of tm.list()) {
+  console.log(`${tool.name} (${tool.server.kind}): ${tool.envKeys.join(', ')}`);
+}
+
+// List tools provided by a specific server
+const tools = await tm.listServerTools('github');
+console.log('GitHub server tools:', tools);
+```
+
+### MCP Server Configuration
+
+Create YAML files in your config directory (e.g., `config/mcp/github.yml`):
 
 ```yaml
+name: github
+command: docker
+args:
+  - run
+  - -i
+  - --rm
+  - -e
+  - GITHUB_PERSONAL_ACCESS_TOKEN
+  - ghcr.io/github/github-mcp-server
 env:
-  PYTHAGORAS_MODEL_ENDPOINT: https://my-proxy.internal/inference/chat/completions
+  GITHUB_PERSONAL_ACCESS_TOKEN: '${input:github_token}'
 ```
 
-The model is instructed to return a fenced JSON block with keys `reasoning` and `patches`; these patches become proposed file changes. In local development you can set `GITHUB_TOKEN=dummy` to exercise logic without remote calls.
+### Server Kind Resolution
 
-## Safety & Limits
+| kind value | resolved implementation |
+| ---------- | ----------------------- |
+| (missing) / '' | stdio |
+| stdio | stdio |
+| http | http |
+| sse | http (SSE streamed over HTTP) |
+
+## API Reference
+
+### Tools Module
+
+```typescript
+import { loadTools, ToolsManager } from '@runsheet/pythagoras-core/tools';
+```
+
+**`loadTools(opts: LoadToolsOptions): ToolsManager`**
+
+Discovers and loads MCP server configurations from YAML files.
+
+**`ToolsManager`**
+
+Main class for managing MCP servers:
+- `list()`: Get all registered tool records
+- `get(name: string)`: Get a specific tool by name
+- `listServerTools(name: string)`: List tools exposed by a server
+- `addConfig(cfg: MCPServerConfig)`: Manually register a server config
+
+### Config Module
+
+```typescript
+import { loadConfig } from '@runsheet/pythagoras-core/config';
+```
+
+Configuration management utilities for loading application settings.
+
+### Memory Module
+
+```typescript
+import { MemoryManager } from '@runsheet/pythagoras/memory';
+```
+
+Context and conversation memory management for AI agents.
+
+## Development
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm run coverage
+```
+
+### Building
+
+```bash
+# Build the package
+npm run build
+
+# Watch mode
+npm run package:watch
+```
+
+### MCP Harness
+
+Test MCP server connections:
+
+```bash
+npm run mcp:harness
+```
+
+Or use the VS Code launch configuration to debug the harness.
+
+## Advanced Usage
+
+### Custom MCP Server Configuration
+
+You can create custom MCP server configs for various runtime environments:
+
+**Docker-based server:**
+```yaml
+name: my-service
+command: docker
+args:
+  - run
+  - -i
+  - --rm
+  - my-mcp-server:latest
+env:
+  API_KEY: '${input:api_key}'
+```
+
+**HTTP/SSE server:**
+```yaml
+name: remote-api
+kind: http
+url: https://api.example.com/mcp
+env:
+  Authorization: 'Bearer ${input:token}'
+```
+
+**Stdio server:**
+```yaml
+name: local-tool
+kind: stdio
+command: node
+args:
+  - ./tools/my-mcp-server.js
+```
+
+### Tool Schema Generation
+
+Build a schema of all available tools with their input requirements:
+
+```typescript
+import { loadTools, buildToolsSchema } from '@runsheet/pythagoras/tools';
+
+const tm = loadTools({ dir: './config/mcp', inputVars: {} });
+const schema = buildToolsSchema(tm);
+
+console.log(JSON.stringify(schema, null, 2));
+// {
+//   "tools": [
+//     {
+//       "name": "github",
+//       "inputs": [
+//         { "name": "github_token", "required": false },
+//         { "name": "github_host", "required": false }
+//       ]
+//     }
+//   ]
+// }
+```
+
+## Contributing
+
+Contributions welcome! Please ensure:
+- All tests pass: `npm test`
+- Code is formatted: `npm run format:write`
+- Linting passes: `npm run lint`
+
+## License
+
+MIT
 
 - Hard cap: 25 files per proposal.
 - Per-file size limit: 50KB.
